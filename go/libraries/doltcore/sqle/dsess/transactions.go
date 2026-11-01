@@ -492,20 +492,23 @@ func (tx *DoltTransaction) commitHeads(
 		// Fill in the commits to return
 		// The length of the list to return is the same as the number of changes, but may contain nil elements
 		// We always pass them to the doltdb layer above in the order [workingSet, (commit)], where commit is optional.
-		// So the result we get back may have a different number of elements than 2*changes, and we need to conditionally
-		// skip some indexes when building the set of commits to return.
+		// So the result we get back may have a different number of elements than 2*changes, and the index of each
+		// change's commit depends on how many of the preceding changes carried one.
 		commits := make([]*doltdb.Commit, len(changes))
+		headIdx := 0
 		for i, change := range changes {
+			headIdx++ // working set head
 			if change.commit != nil {
 				commits[i], err = doltdb.HashToCommit(
 					ctx,
 					startPoint.db.ValueReadWriter(),
 					startPoint.db.NodeStore(),
-					heads[2*i+1],
+					heads[headIdx],
 				)
 				if err != nil {
 					return nil, nil, err
 				}
+				headIdx++
 			}
 		}
 
